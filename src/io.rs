@@ -20,7 +20,6 @@ use byteorder::ByteOrder;
 use byteorder::ReadBytesExt;
 use byteorder::WriteBytesExt;
 use byteorder::LittleEndian as LE;
-use unix_socket as us;
 
 pub trait Read: ReadBytesExt {
     fn read_lenenc_int(&mut self) -> io::Result<u64> {
@@ -267,7 +266,6 @@ impl<T: WriteBytesExt> Write for T {}
 
 #[derive(Debug)]
 pub enum Stream {
-    UnixStream(us::UnixStream),
     TcpStream(Option<TcpStream>),
 }
 
@@ -335,7 +333,6 @@ impl Drop for Stream {
 impl io::Read for Stream {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         match *self {
-            Stream::UnixStream(ref mut s) => s.read(buf),
             Stream::TcpStream(Some(ref mut s)) => s.read(buf),
             _ => panic!("Incomplete stream"),
         }
@@ -345,14 +342,12 @@ impl io::Read for Stream {
 impl io::Write for Stream {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         match *self {
-            Stream::UnixStream(ref mut s) => s.write(buf),
             Stream::TcpStream(Some(ref mut s)) => s.write(buf),
             _ => panic!("Incomplete stream"),
         }
     }
     fn flush(&mut self) -> io::Result<()> {
         match *self {
-            Stream::UnixStream(ref mut s) => s.flush(),
             Stream::TcpStream(Some(ref mut s)) => s.flush(),
             _ => panic!("Incomplete stream"),
         }

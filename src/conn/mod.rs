@@ -19,7 +19,6 @@ use super::consts::ColumnType;
 use super::io::Read as MyRead;
 use super::io::Write;
 use super::io::Stream;
-use super::io::Stream::UnixStream;
 use super::io::Stream::TcpStream;
 use super::io::TcpStream::Insecure;
 use super::error::MyError::{
@@ -47,7 +46,6 @@ use super::value::Value::{NULL, Int, UInt, Float, Bytes, Date, Time};
 
 use byteorder::LittleEndian as LE;
 use byteorder::{ByteOrder, ReadBytesExt, WriteBytesExt};
-use unix_socket as us;
 
 pub mod pool;
 
@@ -721,18 +719,7 @@ impl MyConn {
     }
 
     fn connect_stream(&mut self) -> MyResult<()> {
-        if self.opts.unix_addr.is_some() {
-            match us::UnixStream::connect(self.opts.unix_addr.as_ref().unwrap()) {
-                Ok(stream) => {
-                    self.stream = Some(Stream::UnixStream(stream));
-                    Ok(())
-                },
-                _ => {
-                    let path_str = format!("{}", self.opts.unix_addr.as_ref().unwrap().display());
-                    Err(MyDriverError(CouldNotConnect(Some(path_str))))
-                }
-            }
-        } else if self.opts.tcp_addr.is_some() {
+        if self.opts.tcp_addr.is_some() {
             match net::TcpStream::connect(&(self.opts.tcp_addr.as_ref().unwrap().as_ref(),
                                              self.opts.tcp_port))
             {
@@ -1052,9 +1039,9 @@ impl MyConn {
     }
 
     fn send_local_infile(&mut self, file_name: &[u8]) -> MyResult<Option<OkPacket>> {
-        use std::os::unix::ffi::OsStrExt;
-        let path = ::std::ffi::OsStr::from_bytes(file_name);
-        let path: path::PathBuf = From::from(path);
+        use std::path::PathBuf;
+        let filename = String::from_utf8(Vec::from(file_name)).unwrap();
+        let path: path::PathBuf = PathBuf::from(filename);
         let mut file = try!(fs::File::open(&path));
         let mut chunk = vec![0u8; self.max_allowed_packet];
         let mut r = file.read(&mut chunk[..]);
@@ -1943,4 +1930,3 @@ mod test {
         }
     }
 }
-

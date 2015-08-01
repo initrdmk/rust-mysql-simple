@@ -115,15 +115,13 @@
 extern crate test;
 
 extern crate time;
-#[cfg(feature = "openssl")]
-extern crate openssl;
+
 extern crate regex;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
 extern crate bitflags;
 extern crate byteorder;
-extern crate unix_socket;
 
 mod scramble;
 pub mod consts;
